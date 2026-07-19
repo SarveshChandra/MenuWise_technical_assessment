@@ -11,17 +11,15 @@ class Supplier(models.Model):
 
     def __str__(self):
         return self.name
-    
-    def clean(self):
-        super().clean()
-        errors={}
-        # validate country_code field
-        if self.country_code:
-            self.country_code=self.country_code.strip().upper()
-            if len(self.country_code)!=2 or not self.country_code.isalpha():
-                errors["country_code"]="Country code must be a 2-letter alphabetic text."
-        if errors:
-            raise ValidationError(errors)
+
+    class Meta:
+        constraints = [
+            # Unique supplier name to country combination to avoid duplicate insertions
+            models.UniqueConstraint(
+                fields=["name","country_code"],
+                name="unique_supplier_name_country"
+            )
+        ]
 
 # Product model
 class Product(models.Model):
@@ -37,8 +35,8 @@ class Product(models.Model):
     def __str__(self):
         return self.product_name
     
-    # Field constraints for data validation/integrity
     class Meta:
+        # Field constraints for data validation/integrity
         constraints = [
             # unique sku per supplier
             models.UniqueConstraint(
@@ -61,51 +59,3 @@ class Product(models.Model):
                 name="product_price_gte_zero"
             )
         ]
-    
-    def clean(self):
-        super().clean()
-        errors={}
-        # normalize/validate currency field
-        if not self.currency and self.supplier_id:
-            if self.supplier.country_code=="IN":
-                self.currency="INR"
-            else:
-                self.currency="USD"
-        elif self.currency:
-            self.currency=self.currency.strip().upper()
-            if len(self.currency)!=3 or not self.currency.isalpha():
-                errors["currency"]="Currency must be a 3-letter alphabetic text."
-        # normalize and validate unit field
-        unit_map={
-            "g":"g",
-            "gram":"g",
-            "grams":"g",
-            "kg":"kg",
-            "kilogram":"kg",
-            "kilograms":"kg",
-            "ml":"ml",
-            "l":"l",
-            "litre":"l",
-            "litres":"l",
-            "each":"each",
-            "ea":"each",
-            "piece":"each",
-            "peace":"each"
-        }
-        if self.unit:
-            clean_unit=self.unit.strip().lower()
-            if clean_unit not in unit_map:
-                errors["unit"]="Supported units are g,kg,ml,l,each."
-            else:
-                self.unit=unit_map[clean_unit]
-        # validate price field
-        if self.price is not None:
-            if self.price < 0:
-                errors["price"]="Price cannot be negative."
-        # validate pack_size field
-        if self.pack_size is not None:
-            if self.pack_size <= 0:
-                errors["pack_size"]="Pack size must be greater than 0."
-        # Raise validation error if any errors were found
-        if errors:
-            raise ValidationError(errors)
