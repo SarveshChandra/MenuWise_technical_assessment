@@ -1,0 +1,7 @@
+Django>=5.0
+djangorestframework>=3.15
+django-filter>=24.0
+pytest
+pytest-django
+requests
+beautifulsoup4

@@ -1,0 +1,15 @@
+Suggested Structure:
+
+app/
+├── models.py
+├── admin.py
+├── serializers.py
+├── views.py
+├── urls.py
+├── services/
+│   ├── csv_import.py
+│   └── scraper.py
+├── tests/
+│   ├── test_models.py
+│   ├── test_imports.py
+│   └── test_api.py

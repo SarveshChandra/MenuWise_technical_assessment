@@ -1,0 +1,6 @@
+supplier_name,country_code,supplier_sku,product_name,pack_size,unit,currency,price
+India Fresh,IN,CHA-001,Chicken Breast,1,kg,,250
+India Fresh,IN,TOM-001,Tomatoes,5,kg,INR,180
+Fresh Foods,US,MLK-001,Whole Milk,2,l,USD,4.5
+Fresh Foods,US,MLK-001,Whole Milk Duplicate,2,l,USD,4.5
+Broken Supplier,US,ERR-001,Invalid Product,-1,kg,USD,-50
