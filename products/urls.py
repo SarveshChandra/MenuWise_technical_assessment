@@ -1,11 +1,12 @@
 from django.urls import path
-from .views import ProductCSVImportAPIView, ProductListAPIView
+from .views import (
+    CSVImportAPIView,
+)
 
 urlpatterns = [
-    path("products/", ProductListAPIView.as_view(), name="product-list"),
     path(
-        "products/import/",
-        ProductCSVImportAPIView.as_view(),
-        name="product-import",
+        "products/import/simple/",
+        CSVImportAPIView.as_view(),
+        name="simple-product-import",
     ),
 ]
