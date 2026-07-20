@@ -1,2 +1,36 @@
+# Virtual environments
 venv/
 .venv/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Django local state
+db.sqlite3
+db.sqlite3-journal
+*.log
+staticfiles/
+media/
+
+# Environment and local configuration
+.env
+.env.*
+!.env.example
+
+# Coverage and build artifacts
+.coverage
+.coverage.*
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/

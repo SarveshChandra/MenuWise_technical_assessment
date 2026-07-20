@@ -121,6 +121,7 @@ def fetch_suppliers(keys):
     for name, country_code in keys:
         names_by_country.setdefault(country_code, set()).add(name)
 
+    # Fetch suppliers in chunks to avoid hitting database query limits
     suppliers = {}
     for country_code, names in names_by_country.items():
         names = list(names)
