@@ -17,7 +17,7 @@ Supplier,GB,SKU-1,Product,1,each,EUR,10
         )
 
         response = self.client.post(
-            reverse("simple-product-import"),
+            reverse("csv-product-import"),
             {"file": upload},
             format="multipart",
         )
@@ -53,7 +53,7 @@ India Fresh,IN,NEW,Duplicate in file,1,kg,INR,200
         )
 
         response = self.client.post(
-            reverse("simple-product-import"),
+            reverse("csv-product-import"),
             {"file": upload},
             format="multipart",
         )
@@ -73,7 +73,7 @@ Supplier,IN,"UNFINISHED
         )
 
         response = self.client.post(
-            reverse("simple-product-import"),
+            reverse("csv-product-import"),
             {"file": upload},
             format="multipart",
         )
@@ -92,7 +92,7 @@ Supplier,ÅB,SKU-1,Product,1,each,UŚD,10
         )
 
         response = self.client.post(
-            reverse("simple-product-import"),
+            reverse("csv-product-import"),
             {"file": upload},
             format="multipart",
         )
@@ -116,7 +116,7 @@ Fresh Foods,US,ERR-001,Bad Product,-1,kg,USD,-50
         )
 
         response = self.client.post(
-            reverse("simple-product-import"),
+            reverse("csv-product-import"),
             {"file": upload},
             format="multipart",
         )
@@ -136,10 +136,79 @@ Fresh Foods,US,ERR-001,Bad Product,-1,kg,USD,-50
         )
 
         response = self.client.post(
-            reverse("simple-product-import"),
+            reverse("csv-product-import"),
             {"file": upload},
             format="multipart",
         )
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("missing_columns", response.data)
+
+
+class ProductReadAPITests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.active_supplier = Supplier.objects.create(
+            name="Active Supplier",
+            country_code="IN",
+            active=True,
+        )
+        cls.inactive_supplier = Supplier.objects.create(
+            name="Inactive Supplier",
+            country_code="US",
+            active=False,
+        )
+        cls.chicken = Product.objects.create(
+            supplier=cls.active_supplier,
+            supplier_sku="CHICKEN-1",
+            product_name="Chicken Breast",
+            pack_size=1,
+            unit="kg",
+            currency="INR",
+            price=250,
+        )
+        cls.milk = Product.objects.create(
+            supplier=cls.inactive_supplier,
+            supplier_sku="MILK-1",
+            product_name="Whole Milk",
+            pack_size=2,
+            unit="l",
+            currency="USD",
+            price=5,
+        )
+
+    def test_product_list_is_paginated(self):
+        response = self.client.get(reverse("product-list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 2)
+        self.assertEqual(len(response.data["results"]), 2)
+
+    def test_product_filters_and_search(self):
+        response = self.client.get(
+            reverse("product-list"),
+            {
+                "supplier": self.active_supplier.id,
+                "currency": "inr",
+                "active": "true",
+                "search": "chicken",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["id"], self.chicken.id)
+
+    def test_product_detail(self):
+        response = self.client.get(
+            reverse("product-detail", kwargs={"pk": self.milk.id})
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["supplier_sku"], "MILK-1")
+
+    def test_supplier_list(self):
+        response = self.client.get(reverse("supplier-list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 2)
