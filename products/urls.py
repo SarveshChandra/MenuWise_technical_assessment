@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import (
     CSVImportAPIView,
+    HTMLImportAPIView,
     ProductDetailAPIView,
     ProductListAPIView,
     SupplierListAPIView,
@@ -18,5 +19,10 @@ urlpatterns = [
         "products/import/csv/",
         CSVImportAPIView.as_view(),
         name="csv-product-import",
+    ),
+    path(
+        "products/import/html/",
+        HTMLImportAPIView.as_view(),
+        name="html-product-import",
     ),
 ]

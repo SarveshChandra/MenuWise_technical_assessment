@@ -1,8 +1,10 @@
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from rest_framework.test import APITestCase
+from unittest.mock import patch
 
 from .models import Product, Supplier
+from .services.html_import import import_products_html
 
 
 class ProductCSVImportTests(APITestCase):
@@ -212,3 +214,72 @@ class ProductReadAPITests(APITestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["count"], 2)
+
+
+class SupplierHTMLImportTests(APITestCase):
+    @patch("products.views.import_products_html")
+    def test_html_import_endpoint(self, mock_import):
+        mock_import.return_value = {
+            "total_rows": 1,
+            "accepted_rows": 1,
+            "invalid_rows": 0,
+            "validation_errors": [],
+        }
+
+        response = self.client.post(
+            reverse("html-product-import"),
+            {
+                "url": "https://supplier.example/prices",
+                "supplier_name": "Example Supplier",
+                "country_code": "IN",
+                "currency": "INR",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        mock_import.assert_called_once_with(
+            url="https://supplier.example/prices",
+            supplier_name="Example Supplier",
+            country_code="IN",
+            currency="INR",
+        )
+
+    def test_html_import_endpoint_requires_source_and_supplier(self):
+        response = self.client.post(
+            reverse("html-product-import"),
+            {},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.data["missing_fields"],
+            ["country_code", "supplier_name", "url"],
+        )
+
+    @patch("products.services.html_import.requests.get")
+    def test_parses_normalizes_validates_and_stores_table_rows(self, mock_get):
+        mock_get.return_value.text = """
+        <table>
+          <tr><th>Item</th><th>SKU</th><th>Pack</th><th>Unit</th><th>Price</th></tr>
+          <tr><td>Rice</td><td>R-1</td><td>5</td><td>kilograms</td><td>100</td></tr>
+          <tr><td>Bad Rice</td><td>R-2</td><td>-1</td><td>kg</td><td>50</td></tr>
+        </table>
+        """
+
+        result = import_products_html(
+            url="https://supplier.example/prices",
+            supplier_name="Example Supplier",
+            country_code="IN",
+        )
+
+        mock_get.assert_called_once_with(
+            "https://supplier.example/prices",
+            timeout=15,
+        )
+        self.assertEqual(result["total_rows"], 2)
+        self.assertEqual(result["invalid_rows"], 1)
+        product = Product.objects.get()
+        self.assertEqual(product.unit, "kg")
+        self.assertEqual(product.currency, "INR")
